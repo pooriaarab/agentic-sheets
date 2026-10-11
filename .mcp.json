@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "agentic-sheets": {
+      "command": "npx",
+      "args": ["-y", "agentic-sheets", "mcp"]
+    }
+  }
+}

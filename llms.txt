@@ -1,0 +1,15 @@
+# agentic-sheets
+
+Mirror a local store to and from Google Sheets.
+
+Keywords: google-sheets, sync, agentic-suite, claude-code, codex, cli, mcp.
+
+- SDK: import { pullStore, pushStore } from "agentic-sheets".
+- CLI: agentic-sheets pull --sheet "..." --range "...".
+- MCP: run agentic-sheets mcp, then call pull_store.
+
+## Docs
+
+- README: https://github.com/pooriaarab/agentic-sheets
+- Core contract: https://github.com/pooriaarab/agentic-sheets/blob/main/docs/agentic-core.md
+- License: MIT
