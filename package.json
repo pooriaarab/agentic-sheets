@@ -1,6 +1,6 @@
 {
   "name": "agentic-sheets",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Google Sheets values API wrapper for JSON rows with a TypeScript SDK, CLI, MCP server, dry-run previews, and an in-memory adapter.",
   "keywords": [
     "Google Sheets",
