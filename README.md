@@ -1,10 +1,12 @@
-# Agentic sheets
+# agentic-sheets
 
-Mirror a local store to and from Google Sheets.
+[![npm version](https://img.shields.io/npm/v/agentic-sheets)](https://www.npmjs.com/package/agentic-sheets)
+[![Monthly downloads](https://img.shields.io/npm/dm/agentic-sheets)](https://www.npmjs.com/package/agentic-sheets)
+[![MIT license](https://img.shields.io/badge/license-MIT-blue)](https://opensource.org/license/mit)
 
-One core serves three faces: a terminal command, an npm import,
-and an MCP server. Each mirror previews first, so you see the
-plan before it reads or writes a sheet.
+[Package](https://www.npmjs.com/package/agentic-sheets) · [Source](https://github.com/pooriaarab/agentic-sheets) · [Support](https://github.com/pooriaarab/agentic-sheets/issues)
+
+agentic-sheets is an open-source Google Sheets values API wrapper for developers who move JSON rows through a TypeScript SDK, CLI, or Model Context Protocol (MCP) server.
 
 ## Install
 
@@ -12,126 +14,69 @@ plan before it reads or writes a sheet.
 npm install agentic-sheets
 ```
 
-## Quick start
+Requires Node.js 18 or later. Includes TypeScript declarations and three direct runtime dependencies.
 
-Preview a pull. This reads nothing yet:
+## Preview your first write
 
-```sh
-npx agentic-sheets pull --sheet <id> --range Sheet1!A1:B2
-```
-
-Add `--live` to run it:
+No credentials or environment variables are required for this preview.
 
 ```sh
-npx agentic-sheets pull --sheet <id> --range Sheet1!A1:B2 --live
+npx agentic-sheets push --sheet demo --range 'Sheet1!A1' --text '{"values":[["hello"]]}'
 ```
 
-Push a store file. This previews too:
-
-```sh
-npx agentic-sheets push --sheet <id> --range Sheet1!A1 --file store.json
-```
-
-A store is plain JSON:
-
-```json
-{"values": [["a", "b"], ["c"]], "range": "Sheet1!A1:B2"}
-```
-
-## Auth
-
-Set one of these before a live run:
-
-```sh
-export GOOGLE_SHEETS_TOKEN="<oauth-token>"
-export GOOGLE_SHEETS_API_KEY="<api-key>"
-```
-
-The token reads and writes. The key reads public sheets only.
-With neither set, pull and push run against process memory.
-They still run, and they still preview.
-
-## Three usecases
-
-1. You pull a range to JSON for a script.
-2. You push JSON rows from a file to a range.
-3. You let an agent call the same mirror as an MCP tool.
-
-## Commands
-
-```sh
-agentic-sheets pull --sheet <id> --range <r> [--live]
-agentic-sheets push --sheet <id> --range <r> --file <p> [--live]
-agentic-sheets summary --text <t> [--top <n>]
-agentic-sheets dispatch --text <t> [--dry-run]
-agentic-sheets costs
-agentic-sheets mcp
-```
-
-## Library
+Success prints `dryRun: true`, `rows: 1`, and `cells: 1`. No sheet is changed.
+For a credential-free SDK example, save this as `sheets-demo.mjs` and run `node sheets-demo.mjs`.
 
 ```js
-import { pullStore, pushStore, createStore } from "agentic-sheets";
-
-await pullStore({ spreadsheetId: "<id>", range: "Sheet1!A1:B2" });
-const store = createStore([["a"]], "Sheet1!A1");
-await pushStore(store, { spreadsheetId: "<id>", range: "Sheet1!A1" });
+import { createStore, LocalSheetsAdapter, pushStore, pullStore, getCostReport } from "agentic-sheets";
+const adapter = new LocalSheetsAdapter();
+const target = { adapter, spreadsheetId: "demo", range: "Sheet1!A1" };
+const store = createStore([["hello"]], target.range);
+console.log(await pushStore(store, target)); // Preview first.
+await pushStore(store, { ...target, dryRun: false });
+const result = await pullStore({ ...target, dryRun: false });
+console.log(result.store.values); // [["hello"]]
+console.log(getCostReport().units); // 2 cell units, not money.
 ```
 
-Both calls preview unless you pass `dryRun: false`.
+## Connect Google Sheets
 
-## MCP server
-
-Start the server:
+Set `GOOGLE_SHEETS_TOKEN` to a valid OAuth access token with permission for your spreadsheet.
+CLI and MCP read this variable. The package does not load `.env` files; export variables before starting it.
+`GOOGLE_SHEETS_API_KEY` selects key-based reads; writes require a token. Token authentication takes precedence over an API key.
+With neither variable set, CLI and SDK adapter resolution selects process memory, including for live calls.
 
 ```sh
-npx agentic-sheets mcp
+export GOOGLE_SHEETS_TOKEN='YOUR_OAUTH_ACCESS_TOKEN'
+npx agentic-sheets pull --sheet YOUR_SPREADSHEET_ID --range 'Sheet1!A1:B2'
+npx agentic-sheets pull --sheet YOUR_SPREADSHEET_ID --range 'Sheet1!A1:B2' --live
 ```
 
-Tools: `pull_store`, `push_store`, `summarize_text`,
-`dispatch_text`, `get_cost_report`. Each mirror tool previews
-unless you pass `dryRun: false`.
+A successful live pull prints `adapter: "google-sheets"`, `dryRun: false`, and the returned values.
 
-Add it to a client config:
+## Features and runtime surfaces
 
-```json
-{"mcpServers": {"agentic-sheets": {"command": "npx", "args": ["-y", "agentic-sheets", "mcp"]}}}
-```
+- **Sheet adapters:** Two implementations: Google Sheets values GET/PUT and an in-memory local adapter.
+- **Stores:** String rows with range, optional spreadsheet ID, timestamp, JSON parsing, and serialization.
+- **Previews:** SDK and MCP pull/push default to dry-run; CLI mirrors require `--live` for execution.
+- **SDK controls:** Inject adapters, fetch, logging, guards, timeout, and `RAW` or `USER_ENTERED` write handling.
+- **CLI:** `pull`, `push`, `summary`, `dispatch`, `costs`, `mcp`; `--help` and `--version` also work.
+- **MCP:** `pull_store`, `push_store`, `summarize_text`, `dispatch_text`, `get_cost_report`.
+- **Worker scaffold:** Four source routes: `GET /health`, `POST /summarize`, `POST /pull`, `POST /push`; users deploy it themselves.
 
-## Worker
+Start MCP with `npx agentic-sheets mcp`. Mirror tools accept `spreadsheetId`, `range`, and optional `dryRun`; push also takes string `values` rows.
+Push accepts store JSON through `--text` or `--file`. Summary accepts text/files and `--top`; local dispatch supports `--dry-run`.
 
-`src/worker.ts` serves the same core over HTTP. It answers
-`GET /health`, `POST /summarize`, `POST /pull`, and `POST /push`.
-Live mirror routes need a token in the body or in
-`GOOGLE_SHEETS_TOKEN`. See `wrangler.jsonc`.
+## Limits and status
 
-## Contract
-
-This pack builds against `agentic-core@0.1.0` and the frozen
-contract in `agentic-core.d.ts`. See `docs/agentic-core.md`.
-
-## Gates
-
-```sh
-npm run build && npm run typecheck && npm test
-```
-
-## Release flow
-
-Push to `main` for review. Merge to `release` to publish. The
-publish workflow ships only when the version is new.
-
-## Layout
-
-- `src/index.ts`: the library face.
-- `src/cli.ts`: the terminal face.
-- `src/mcp.ts`: the MCP server. `src/mcp-bin.ts` starts it.
-- `src/worker.ts`: the edge worker face.
-- `src/sheets.ts`: the store and the sheet adapters.
-- `src/core.ts`: the shared core.
-- `agentic-core.d.ts`: the frozen contract.
-- `docs/agentic-core.md`: the contract in plain words.
+One vendor integration is implemented: Google Sheets. Tests use local and mocked adapters; live credentials are not verified here.
+There is no automatic synchronization, conflict resolution, OAuth login, token refresh, retry, or file persistence.
+Google requests default to a ten-second timeout. Writes update a range; they do not append rows or format cells.
+The local adapter matches exact range strings and loses data with its instance. Separate CLI calls do not share that memory.
+Cost reports count cells and text units in process memory, rather than Google billing charges.
+Worker live mirrors require a body token or `GOOGLE_SHEETS_TOKEN`; Worker routes do not support API keys.
+Version 0.1.0 is an early release.
 
 ## License
 
-MIT. See `LICENSE`.
+MIT.

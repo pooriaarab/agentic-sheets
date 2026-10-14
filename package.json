@@ -1,15 +1,21 @@
 {
   "name": "agentic-sheets",
   "version": "0.1.0",
-  "description": "Mirror a local store to and from Google Sheets.",
+  "description": "Google Sheets values API wrapper for JSON rows with a TypeScript SDK, CLI, MCP server, dry-run previews, and an in-memory adapter.",
   "keywords": [
-    "google-sheets",
-    "sync",
-    "agentic-suite",
-    "claude-code",
-    "codex",
+    "Google Sheets",
+    "google-sheets-api",
+    "json",
+    "spreadsheet",
+    "rows",
+    "TypeScript",
+    "Node.js",
     "cli",
-    "mcp"
+    "mcp",
+    "oauth",
+    "dry-run",
+    "in-memory",
+    "Zod"
   ],
   "license": "MIT",
   "author": "Pooria Arab",
